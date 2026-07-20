@@ -8,4 +8,4 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-module.exports = { transporter }; // 👈 ይህ ኤክስፖርት መደረጉ ወሳኝ ነው
+module.exports = { transporter }; 

@@ -12,22 +12,22 @@ exports.protect = async (req, res, next) => {
 
       // SMART CHECK: If user is blocked, stop them here
       if (user && user.isActive === false) {
-        return res.status(401).json({ message: 'አካውንትዎ ታግዷል (Blocked)!' });
+        return res.status(401).json({ message: 'Your account has been blocked!' });
       }
 
       req.user = user;
       next();
     } catch (error) {
-      return res.status(401).json({ message: 'Token ስህተት ነው' });
+      return res.status(401).json({ message: 'Token is invalid' });
     }
   }
-  if (!token) return res.status(401).json({ message: 'Login አላደረግክም!' });
+  if (!token) return res.status(401).json({ message: 'You are not logged in!' });
 };
 
 exports.adminOnly = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
   } else {
-    res.status(403).json({ message: 'አድሚን ብቻ ነው የሚፈቀድለት' });
+    res.status(403).json({ message: 'Access denied. Admins only.' });
   }
 };

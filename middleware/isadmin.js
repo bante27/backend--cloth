@@ -1,11 +1,11 @@
 exports.adminOnly = (req, res, next) => {
-    // req.user የመጣው ከቀደመው 'protect' middleware ነው
+    // req.user comes from the preceding 'protect' middleware
     if (req.user && req.user.role === 'admin') {
-        next(); // አድሚን ከሆነ ወደ ልብስ መመዝገቢያው እለፍ
+        next(); // If admin, proceed to the item registration handler
     } else {
         return res.status(403).json({ 
             success: false, 
-            msg: 'ይህ ቦታ ለአድሚን ብቻ የተፈቀደ ነው! ተራ ደንበኛ ልብስ መመዝገብ አይችልም' 
+            msg: 'This area is restricted to administrators only! Regular customers cannot register items.' 
         });
     }
 };

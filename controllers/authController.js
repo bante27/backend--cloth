@@ -8,7 +8,7 @@ const generateToken = (id, role) => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '6h' });
 };
 
-// 1. REGISTER (ተጠቃሚ መመዝገቢያ)
+// 1. REGISTER
 const registerUser = async (req, res) => {
     try {
         const { name, email, password, phone, address } = req.body;
@@ -34,14 +34,14 @@ const registerUser = async (req, res) => {
     }
 };
 
-// 2. LOGIN (መግቢያ)
+// 2. LOGIN
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: 'Invalid email or password' });
         
-        if (!user.isActive) return res.status(403).json({ message: "አካውንትዎ ታግዷል! እባክዎ አስተዳዳሪውን ያነጋግሩ።" });
+        if (!user.isActive) return res.status(403).json({ message: "Your account has been blocked! Please contact the administrator." });
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
@@ -71,7 +71,6 @@ const socialLoginSuccess = async (req, res) => {
             name: req.user.name,
             email: req.user.email,
             role: req.user.role,
-            // 💡 ከ Google/Facebook የመጣውን ፎቶ እዚህ እንጨምራለን
             profilePicture: req.user.profilePicture, 
             token: token
         };
@@ -84,8 +83,6 @@ const socialLoginSuccess = async (req, res) => {
 };
 
 // 3. UPDATE PROFILE
-// 3. UPDATE PROFILE (Fixed with Cloudinary error handling)
-// 3. UPDATE PROFILE (Keeping your logic, but adding isSuperAdmin to response)
 const updateUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
@@ -109,7 +106,6 @@ const updateUserProfile = async (req, res) => {
 
         const updatedUser = await user.save();
         
-        // Final Response matches what Frontend AdminProfile expects
         res.json({
             success: true,
             user: {
@@ -119,7 +115,7 @@ const updateUserProfile = async (req, res) => {
                 phone: updatedUser.phone,
                 profilePicture: updatedUser.profilePicture,
                 role: updatedUser.role,
-                isSuperAdmin: updatedUser.isSuperAdmin, // 🔥 Required for Admin Dashboard
+                isSuperAdmin: updatedUser.isSuperAdmin, 
                 address: updatedUser.address
             },
             token: generateToken(updatedUser._id, updatedUser.role)
@@ -130,18 +126,15 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
-// 4. GET USER PROFILE (FIXED)
+// 4. GET USER PROFILE
 const getUserProfile = async (req, res) => {
     try {
-        // .select('-password') is good for security
         const user = await User.findById(req.user.id).select('-password');
         
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // IMPORTANT: Wrap the user in a 'user' object and include 'success: true'
-        // This stops the infinite loading spinner on the frontend.
         res.json({
             success: true,
             user: {
@@ -151,7 +144,7 @@ const getUserProfile = async (req, res) => {
                 phone: user.phone,
                 address: user.address,
                 role: user.role,
-                isSuperAdmin: user.isSuperAdmin, // 🔥 Ensures the Admin Badge shows up
+                isSuperAdmin: user.isSuperAdmin, 
                 profilePicture: user.profilePicture
             }
         });
@@ -161,6 +154,7 @@ const getUserProfile = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // 5. CHANGE PASSWORD (Logged-in)
 const changePassword = async (req, res) => {
     try {
@@ -170,7 +164,7 @@ const changePassword = async (req, res) => {
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const isMatch = await bcrypt.compare(oldPassword, user.password);
-        if (!isMatch) return res.status(400).json({ message: "የድሮው የይለፍ ቃል የተሳሳተ ነው" });
+        if (!isMatch) return res.status(400).json({ message: "The old password is incorrect" });
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
@@ -187,7 +181,7 @@ const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "ኢሜሉ አልተገኘም!" });
+        if (!user) return res.status(404).json({ message: "Email not found!" });
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         
@@ -205,16 +199,16 @@ const forgotPassword = async (req, res) => {
             to: email,
             subject: 'Password Reset OTP',
             html: `<div style="font-family:sans-serif; text-align:center; padding:20px; border:1px solid #eee;">
-                    <h2>የይለፍ ቃል መቀየሪያ ኮድ</h2>
-                    <p>ይህንን ኮድ ተጠቅመው የይለፍ ቃልዎን መቀየር ይችላሉ።</p>
+                    <h2>Password Reset Code</h2>
+                    <p>You can use this code to reset your password.</p>
                     <h1 style="color:orange; letter-spacing:5px;">${otp}</h1>
-                    <p style="color:red;">ይህ ኮድ ለ 10 ደቂቃ ብቻ ያገለግላል።</p>
+                    <p style="color:red;">This code is valid for 10 minutes only.</p>
                    </div>`,
         });
 
-        res.json({ success: true, message: "OTP ተልኳል!" });
+        res.json({ success: true, message: "OTP sent successfully!" });
     } catch (error) {
-        res.status(500).json({ message: "Email መላክ አልተቻለም፡ " + error.message });
+        res.status(500).json({ message: "Failed to send email: " + error.message });
     }
 };
 
@@ -249,7 +243,7 @@ const resetPassword = async (req, res) => {
             resetOTPExpire: { $gt: Date.now() },
         });
 
-        if (!user) return res.status(400).json({ message: "የተሳሳተ ወይም ጊዜው ያለፈበት OTP!" });
+        if (!user) return res.status(400).json({ message: "Invalid or expired OTP!" });
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
@@ -258,7 +252,7 @@ const resetPassword = async (req, res) => {
         user.resetOTPExpire = undefined;
         await user.save();
 
-        res.json({ success: true, message: "ፓስወርድዎ በትክክል ተቀይሯል!" });
+        res.json({ success: true, message: "Your password has been changed successfully!" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -279,18 +273,17 @@ const getUsers = async (req, res) => {
 const toggleUserStatus = async (req, res) => {
     try {
         const userToChange = await User.findById(req.params.id);
-        // This is the admin currently logged in (from your protect middleware)
         const currentUser = await User.findById(req.user.id);
 
         if (!userToChange) {
-            return res.status(404).json({ message: "ተጠቃሚው አልተገኘም (User not found)" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         // 1. RULE: You cannot block yourself
         if (req.user.id === req.params.id) {
             return res.status(400).json({ 
                 success: false, 
-                message: "ራስዎን ማገድ አይችሉም!" 
+                message: "You cannot block yourself!" 
             });
         }
 
@@ -298,16 +291,15 @@ const toggleUserStatus = async (req, res) => {
         if (userToChange.isSuperAdmin) {
             return res.status(403).json({ 
                 success: false, 
-                message: "ዋናውን አስተዳዳሪ (Super Admin) ማገድ አይቻልም!" 
+                message: "The main administrator (Super Admin) cannot be blocked!" 
             });
         }
 
         // 3. RULE: A regular Admin cannot block another Admin
-        // Only a Super Admin has the power to block other Admins
         if (userToChange.role === 'admin' && !currentUser.isSuperAdmin) {
             return res.status(403).json({ 
                 success: false, 
-                message: "አስተዳዳሪን ለማገድ የሱፐር አድሚን ፈቃድ ያስፈልጋል!" 
+                message: "Super Admin permission is required to block an administrator!" 
             });
         }
 
@@ -317,31 +309,30 @@ const toggleUserStatus = async (req, res) => {
 
         res.json({ 
             success: true, 
-            message: `ተጠቃሚው ${userToChange.isActive ? 'ተለቋል' : 'ታግዷል'}`, 
+            message: `The user has been ${userToChange.isActive ? 'unblocked' : 'blocked'}`, 
             user: userToChange 
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
-// --- ADMIN FUNCTIONS ---
 
 // 9. UPDATE USER ROLE (Admin Only - e.g., Make Admin)
 const updateUserRole = async (req, res) => {
     try {
-        const { role } = req.body; // 'admin' or 'customer'
+        const { role } = req.body; 
         const targetUser = await User.findById(req.params.id);
         const adminPerformingAction = await User.findById(req.user.id);
 
         if (!targetUser) {
-            return res.status(404).json({ message: "ተጠቃሚው አልተገኘም (User not found)" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         // 1. CRITICAL GUARD: Only a Super Admin can change roles
         if (!adminPerformingAction.isSuperAdmin) {
             return res.status(403).json({ 
                 success: false, 
-                message: "አድሚን የመሾም ስልጣን የለዎትም! የሱፐር አድሚን ፈቃድ ያስፈልጋል። (Only Super Admin can change roles)" 
+                message: "You do not have permission to appoint an admin! Super Admin authorization is required. (Only Super Admin can change roles)" 
             });
         }
 
@@ -349,15 +340,15 @@ const updateUserRole = async (req, res) => {
         if (req.user.id === req.params.id) {
             return res.status(400).json({ 
                 success: false, 
-                message: "የራስዎን የሱፐር አድሚን ስልጣን እዚህ መቀነስ አይችሉም!" 
+                message: "You cannot demote your own Super Admin status here!" 
             });
         }
 
-        // 3. Prevent changing the role of another Super Admin (if you have multiple)
+        // 3. Prevent changing the role of another Super Admin
         if (targetUser.isSuperAdmin && req.user.id !== targetUser.id) {
             return res.status(403).json({ 
                 success: false, 
-                message: "ዋናውን አስተዳዳሪ መቀየር አይቻልም!" 
+                message: "The main administrator cannot be modified!" 
             });
         }
 
@@ -367,38 +358,29 @@ const updateUserRole = async (req, res) => {
 
         res.json({ 
             success: true, 
-            message: `የተጠቃሚው ሚና ወደ ${targetUser.role} ተቀይሯል! ✅`, 
+            message: `User role has been changed to ${targetUser.role}! ✅`, 
             user: targetUser 
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
-// controllers/authController.js (or wherever you handle settings)
 
-// ==========================================
 // GET ADMIN CONTACT INFO (Public)
-// ==========================================
 const getAdminContact = async (req, res) => {
     try {
-        // 1. Fetch the admin from the database
-        // We select only the fields necessary for the contact card
         const admin = await User.findOne({
             $or: [{ role: 'admin' }, { isSuperAdmin: true }]
         }).select('phone email address');
 
-        // 2. Error handling if no user exists in the DB
         if (!admin) {
             return res.status(404).json({ message: 'Store contact information not found' });
         }
 
-        // 3. Send back the real data
-        // We provide "logical" fallbacks in case the admin hasn't filled their profile yet
         res.status(200).json({
             phone: admin.phone || 'No phone provided',
             email: admin.email || 'No email provided',
             address: admin.address || 'Addis Ababa, Ethiopia',
-            // These stay as strings for now unless you add them to your DB Schema
             hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
             closed: 'Sunday: Closed'
         });
@@ -408,6 +390,7 @@ const getAdminContact = async (req, res) => {
         res.status(500).json({ message: 'Server error fetching contact data' });
     }
 };
+
 // --- EXPORTS ---
 module.exports = { 
     registerUser, 
@@ -420,7 +403,7 @@ module.exports = {
     forgotPassword,
     verifyOtp,
     resetPassword,
-    socialLoginSuccess, // Added for Passport
+    socialLoginSuccess, 
     updateUserRole,
-    getAdminContact // New export for fetching admin contact info
+    getAdminContact 
 };

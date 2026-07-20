@@ -15,7 +15,7 @@ exports.subscribeUser = async (req, res) => {
     // Check if the user is already on the list
     const existingSubscriber = await Subscriber.findOne({ email });
     if (existingSubscriber) {
-      return res.status(400).json({ message: 'This email is already registered. | ይህ ኢሜይል ቀድሞ ተመዝግቧል።' });
+      return res.status(400).json({ message: 'This email is already registered.' });
     }
 
     // 1. Save new subscriber
@@ -47,7 +47,7 @@ exports.subscribeUser = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Subscription successful! Check your inbox. | በተሳካ ሁኔታ ተመዝግበዋል! ኢሜይልዎን ያረጋግጡ።'
+      message: 'Subscription successful! Check your inbox.'
     });
 
   } catch (error) {
@@ -69,19 +69,19 @@ exports.verifyCoupon = async (req, res) => {
     const coupon = await Coupon.findOne({ code: code.toUpperCase().trim() });
 
     if (!coupon) {
-      return res.status(404).json({ message: 'Invalid coupon code. | ትክክለኛ ያልሆነ የኩፖን ኮድ።' });
+      return res.status(404).json({ message: 'Invalid coupon code.' });
     }
 
     if (coupon.isUsed) {
-      return res.status(400).json({ message: 'This coupon code has already been claimed. | ይህ ኩፖን ቀድሞ ጥቅም ላይ ውሏል።' });
+      return res.status(400).json({ message: 'This coupon code has already been claimed.' });
     }
 
     if (new Date() > coupon.expiresAt) {
-      return res.status(400).json({ message: 'This coupon has expired. | ይህ ኩፖን ጊዜው አልፎበታል።' });
+      return res.status(400).json({ message: 'This coupon has expired.' });
     }
 
     if (coupon.associatedEmail !== email.toLowerCase().trim()) {
-      return res.status(403).json({ message: 'This coupon is exclusively linked to another account. | ይህ ኩፖን የሌላ ሰው ነው።' });
+      return res.status(403).json({ message: 'This coupon is exclusively linked to another account.' });
     }
 
     return res.status(200).json({

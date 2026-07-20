@@ -60,19 +60,14 @@ const getProducts = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-// @desc    Get single product
-// በባክ-ኤንድ routes/productRoutes.js ወይም controllers/productController.js ላይ
 const getProductById = async (req, res) => {
   try {
-    // 1. የ ID ፎርማት ትክክል መሆኑን በ mongoose ማረጋገጥ
     if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ message: 'Invalid Product ID format' });
     }
 
     const product = await Product.findById(req.params.id);
 
-    // 2. ምርቱ በዳታቤዙ ውስጥ ከሌለ
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -80,7 +75,6 @@ const getProductById = async (req, res) => {
     res.json(product);
   } catch (error) {
     console.error("Error fetching product:", error);
-    // 🛑 500 Error የሚመጣው እዚህ catch ውስጥ ሲገባ ነው፤ ሙሉ ማብራሪያውን በተርሚናል ለማየት console.error አድርገነዋል
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
