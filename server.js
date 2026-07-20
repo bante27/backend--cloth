@@ -11,6 +11,7 @@ const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const couponRoutes = require('./routes/couponRoutes');
 
 const app = express();
 
@@ -28,7 +29,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/messages', messageRoutes);
-
+app.use('/api/coupons', couponRoutes);
 app.get('/test', (req, res) => {
     res.status(200).json({ message: "Habesha Cloths API is running perfectly! 🚀" });
 });

@@ -9,21 +9,35 @@ const {
   getProductById, 
   updateProduct, 
   deleteProduct, 
-  createProductReview 
+  createProductReview,
+  getNewArrivals,       // Imported ✅
+  getLowestCostProducts // Imported ✅
 } = require('../controllers/productController');
 
 const upload = multer({ storage });
 
-// Public Routes
+// ==========================================
+// 🔓 Public Routes
+// ==========================================
+
 // @desc    Get all products with filtering
 router.get('/', getProducts);
 
-// @desc    Get a single product by ID
+// @desc    Get new arrival products (Placed ABOVE /:id) ✅
+router.get('/new-arrivals', getNewArrivals);
+
+// @desc    Get products sorted by lowest price (Placed ABOVE /:id) ✅
+router.get('/lowest-cost', getLowestCostProducts);
+
+// @desc    Get a single product by ID (Dynamic route stays below static paths)
 router.get('/:id', getProductById);
 
+
+// ==========================================
+// 🔒 Protected / Admin Routes
+// ==========================================
+
 /**
- * Admin Routes
- * -----------------------------------------------------------------------
  * Note: We use upload.any() because our controller expects dynamic field names
  * like variantImages[0][imageFront], variantImages[1][imageBack], etc.
  * upload.fields() cannot handle these indexed names dynamically.

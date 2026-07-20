@@ -374,6 +374,40 @@ const updateUserRole = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// controllers/authController.js (or wherever you handle settings)
+
+// ==========================================
+// GET ADMIN CONTACT INFO (Public)
+// ==========================================
+const getAdminContact = async (req, res) => {
+    try {
+        // 1. Fetch the admin from the database
+        // We select only the fields necessary for the contact card
+        const admin = await User.findOne({
+            $or: [{ role: 'admin' }, { isSuperAdmin: true }]
+        }).select('phone email address');
+
+        // 2. Error handling if no user exists in the DB
+        if (!admin) {
+            return res.status(404).json({ message: 'Store contact information not found' });
+        }
+
+        // 3. Send back the real data
+        // We provide "logical" fallbacks in case the admin hasn't filled their profile yet
+        res.status(200).json({
+            phone: admin.phone || 'No phone provided',
+            email: admin.email || 'No email provided',
+            address: admin.address || 'Addis Ababa, Ethiopia',
+            // These stay as strings for now unless you add them to your DB Schema
+            hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
+            closed: 'Sunday: Closed'
+        });
+
+    } catch (error) {
+        console.error('Admin contact fetch error:', error);
+        res.status(500).json({ message: 'Server error fetching contact data' });
+    }
+};
 // --- EXPORTS ---
 module.exports = { 
     registerUser, 
@@ -387,5 +421,6 @@ module.exports = {
     verifyOtp,
     resetPassword,
     socialLoginSuccess, // Added for Passport
-    updateUserRole
+    updateUserRole,
+    getAdminContact // New export for fetching admin contact info
 };

@@ -10,20 +10,24 @@ const {
     getOrders, 
     getMyOrders,
     updateOrderToShipped,
-    updateOrderToDeliveredByClient
+    updateOrderToDeliveredByClient,
+    validateCoupon
 } = require('../controllers/orderController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 const upload = multer({ storage });
 
-// --- USER ROUTES ---
+// --- STATIC / SPECIFIC ROUTES (Must go first!) ---
+router.post('/validate-coupon', protect, validateCoupon); // Added protect middleware for security
 router.post('/', protect, upload.single('image'), addOrderItems);
 router.get('/myorders', protect, getMyOrders);
-router.put('/:id/deliver', protect, updateOrderToDelivered); // Customer marks as delivered
-router.put('/:id/deliver-client', protect, updateOrderToDeliveredByClient); // New route for client to mark as delivered
-// --- ADMIN & SHARED ROUTES ---
 router.get('/', protect, adminOnly, getOrders);
+
+// --- DYNAMIC PARAMETER ROUTES (Must go last!) ---
 router.get('/:id', protect, getOrderById);
+router.put('/:id/deliver', protect, updateOrderToDelivered); 
+router.put('/:id/deliver-client', protect, updateOrderToDeliveredByClient); 
 router.put('/:id/pay', protect, adminOnly, updateOrderToPaid);
-router.put('/:id/ship', protect, adminOnly, updateOrderToShipped); // Admin marks as shipped
+router.put('/:id/ship', protect, adminOnly, updateOrderToShipped); 
+
 module.exports = router;

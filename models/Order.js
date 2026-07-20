@@ -19,15 +19,20 @@ const OrderSchema = new mongoose.Schema({
     phone: { type: String, required: true }
   },
   paymentScreenshot: { type: String },
+  
+  // 🎟️ FIELDS FOR HANDLING DISCOUNT TRACKING
+  couponApplied: { type: String, default: null },
+  discountAmount: { type: Number, required: true, default: 0.0 },
+
   totalPrice: { type: Number, required: true, default: 0.0 },
   isPaid: { type: Boolean, required: true, default: false },
   paidAt: { type: Date },
   isShipped: { type: Boolean, required: true, default: false },
   shippedAt: { type: Date },
-  isDelivered: { type: Boolean, default: false },               // ✅ added
-  deliveredAt: { type: Date },                                 // ✅ added
-  expectedDeliveryStart: { type: Date },                       // ✅ added
-  expectedDeliveryEnd: { type: Date },                         // ✅ added
+  isDelivered: { type: Boolean, default: false },
+  deliveredAt: { type: Date },
+  expectedDeliveryStart: { type: Date },
+  expectedDeliveryEnd: { type: Date },
   status: { type: String, default: 'Pending Verification' }
 }, { timestamps: true });
 

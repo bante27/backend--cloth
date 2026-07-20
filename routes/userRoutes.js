@@ -15,7 +15,8 @@ const {
     getUserProfile,
     verifyOtp,
     socialLoginSuccess, // This is the new helper we added to the controller
-    updateUserRole // This is the new helper we added to the controller
+    updateUserRole ,// This is the new helper we added to the controller
+    getAdminContact // New route for fetching admin contact info
 
 } = require('../controllers/authController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
@@ -68,4 +69,5 @@ router.put('/change-password', protect, changePassword);
 router.get('/', protect, adminOnly, getUsers);
 router.put('/:id/block', protect, adminOnly, toggleUserStatus);
 router.put('/:id/role', protect, adminOnly, updateUserRole); // New route for updating user role
+router.get('/admin/contact', protect, getAdminContact); // New route for fetching admin contact info
 module.exports = router;

@@ -62,13 +62,26 @@ const getProducts = async (req, res) => {
 };
 
 // @desc    Get single product
+// በባክ-ኤንድ routes/productRoutes.js ወይም controllers/productController.js ላይ
 const getProductById = async (req, res) => {
   try {
+    // 1. የ ID ፎርማት ትክክል መሆኑን በ mongoose ማረጋገጥ
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid Product ID format' });
+    }
+
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
-    res.json({ success: true, product });
+
+    // 2. ምርቱ በዳታቤዙ ውስጥ ከሌለ
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.json(product);
   } catch (error) {
-    res.status(500).json({ message: "Invalid ID format" });
+    console.error("Error fetching product:", error);
+    // 🛑 500 Error የሚመጣው እዚህ catch ውስጥ ሲገባ ነው፤ ሙሉ ማብራሪያውን በተርሚናል ለማየት console.error አድርገነዋል
+    res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
 
@@ -230,6 +243,49 @@ const createProductReview = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// @desc    Get new arrival products only (Limited to 8 products for a clean home page slider)
+// @route   GET /api/products/new-arrivals
+const getNewArrivals = async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 8; // Allows frontend to customize limits dynamically
+    
+    // Query directly matches how you save new arrivals: isNew: true
+    const products = await Product.find({ isNew: true })
+      .sort({ createdAt: -1 }) // Latest first
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products
+    });
+  } catch (error) {
+    console.error('Get new arrivals error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get products sorted by lowest price first
+// @route   GET /api/products/lowest-cost
+const getLowestCostProducts = async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 8;
+
+    // Fetch products where countInStock > 0 (Optional: only show purchasable items)
+    const products = await Product.find({})
+      .sort({ price: 1 }) // 1 means Ascending Order (Cheapest -> Most Expensive)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products
+    });
+  } catch (error) {
+    console.error('Get lowest cost products error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 module.exports = { 
   createProduct, 
@@ -237,5 +293,7 @@ module.exports = {
   getProductById, 
   updateProduct, 
   deleteProduct, 
-  createProductReview 
+  createProductReview,
+  getNewArrivals,
+  getLowestCostProducts
 };
