@@ -3,6 +3,10 @@ const router = express.Router();
 const multer = require('multer');
 const passport = require('passport'); // Required for Social Login
 const { storage } = require('../config/cloudinary'); 
+
+// Import Rate Limiters from Middleware
+const { authLimiter } = require('../middleware/rateLimiter');
+
 const { 
     registerUser, 
     loginUser, 
@@ -14,9 +18,9 @@ const {
     resetPassword,
     getUserProfile,
     verifyOtp,
-    socialLoginSuccess, // This is the new helper we added to the controller
-    updateUserRole ,// This is the new helper we added to the controller
-    getAdminContact // New route for fetching admin contact info
+    socialLoginSuccess, 
+    updateUserRole,
+    getAdminContact 
 
 } = require('../controllers/authController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
@@ -24,13 +28,13 @@ const { protect, adminOnly } = require('../middleware/authMiddleware');
 const upload = multer({ storage });
 
 // ==========================================
-// --- PUBLIC ROUTES ---
+// --- PUBLIC ROUTES (Rate Limited Auth) ---
 // ==========================================
-router.post('/register', registerUser);
-router.post('/login', loginUser);
-router.post('/forgot-password', forgotPassword);
-router.post('/verify-otp', verifyOtp);
-router.post('/reset-password', resetPassword);
+router.post('/register', authLimiter, registerUser);
+router.post('/login', authLimiter, loginUser);
+router.post('/forgot-password', authLimiter, forgotPassword);
+router.post('/verify-otp', authLimiter, verifyOtp);
+router.post('/reset-password', authLimiter, resetPassword);
 
 // ==========================================
 // --- SOCIAL AUTH ROUTES (Browser Only) ---
@@ -68,6 +72,7 @@ router.put('/change-password', protect, changePassword);
 // ==========================================
 router.get('/', protect, adminOnly, getUsers);
 router.put('/:id/block', protect, adminOnly, toggleUserStatus);
-router.put('/:id/role', protect, adminOnly, updateUserRole); // New route for updating user role
-router.get('/admin/contact', protect, getAdminContact); // New route for fetching admin contact info
+router.put('/:id/role', protect, adminOnly, updateUserRole); 
+router.get('/admin/contact', protect, getAdminContact); 
+
 module.exports = router;
