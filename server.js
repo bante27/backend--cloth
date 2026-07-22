@@ -24,9 +24,23 @@ connectDB();
 // Handle reverse proxy headers (Render, Vercel, Nginx) for accurate IP rate limiting
 app.set('trust proxy', 1);
 
-// CORS Configuration
+// ✅ CORS Configuration - Render Frontend URL ተጨምሯል
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'https://tigst-online-shop.onrender.com' // <-- አዲሱ የ Frontend URL
+];
+
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'],
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl requests)
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
