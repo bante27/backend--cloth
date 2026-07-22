@@ -29,7 +29,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
-  'https://tigst-online-shop.onrender.com' // <-- አዲሱ የ Frontend URL
+  'https://tigst-online-shop.onrender.com',
+  'https://wubante-mitiku.onrender.com'
+  
 ];
 
 const corsOptions = {
