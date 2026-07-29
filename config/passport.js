@@ -1,23 +1,34 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
-const User = require('../models/Users'); // 💡 Ensure this is 'User', not 'Users' if your file is User.js
+const User = require('../models/Users'); // 💡 Ensure file path matches your project structure
+
+// Base Backend URL dynamically set based on environment
+const BACKEND_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://backend-cloth.onrender.com' 
+  : 'http://localhost:5000';
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    // 💡 This MUST match the Google Console exactly (including http vs https)
-    callbackURL: "http://localhost:5000/api/users/auth/google/callback" 
+    // ✅ Dynamically selected URL for Local vs Render
+    callbackURL: `${BACKEND_URL}/api/users/auth/google/callback`
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      let email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+      
+      if (!email) {
+        return done(new Error("No email found from Google account"), null);
+      }
+
       // Find or create user
-      let user = await User.findOne({ email: profile.emails[0].value });
+      let user = await User.findOne({ email });
       
       if (!user) {
         user = await User.create({
           name: profile.displayName,
-          email: profile.emails[0].value,
+          email: email,
           password: 'social-login-password-' + Math.random(), 
           isActive: true
         });
@@ -32,7 +43,7 @@ passport.use(new GoogleStrategy({
 passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_APP_ID || 'placeholder',
     clientSecret: process.env.FACEBOOK_APP_SECRET || 'placeholder',
-    callbackURL: "http://localhost:5000/api/users/auth/facebook/callback",
+    callbackURL: `${BACKEND_URL}/api/users/auth/facebook/callback`,
     profileFields: ['id', 'displayName', 'emails']
   },
   async (accessToken, refreshToken, profile, done) => {
@@ -61,6 +72,10 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser(async (id, done) => {
-  const user = await User.findById(id);
-  done(null, user);
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
 });

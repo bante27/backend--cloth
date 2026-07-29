@@ -12,6 +12,12 @@ const subscriberSchema = new mongoose.Schema({
   subscribedAt: {
     type: Date,
     default: Date.now
+  },
+  ipAddress: {
+    type: String,
+    required: false,
+    index: true,
+    trim: true
   }
 }, { timestamps: true });
 

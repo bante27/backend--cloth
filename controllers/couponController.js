@@ -2,24 +2,55 @@ const Subscriber = require('../models/Subscriber');
 const Coupon = require('../models/Coupon');
 const { sendWelcomeEmail } = require('../utils/sendEmail');
 
+// Helper to extract client IP address robustly
+const getClientIp = (req) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.socket.remoteAddress || req.ip;
+};
+
+// @desc    Check subscription status by IP address
+// @route   GET /api/coupons/status
+exports.checkSubscriptionStatus = async (req, res) => {
+  try {
+    const clientIp = getClientIp(req);
+    const existingSubscriber = await Subscriber.findOne({ ipAddress: clientIp });
+
+    return res.status(200).json({
+      success: true,
+      subscribed: !!existingSubscriber,
+      email: existingSubscriber ? existingSubscriber.email : null
+    });
+  } catch (error) {
+    console.error('Subscription Status Check Error:', error);
+    return res.status(500).json({ message: 'Internal validation failure.' });
+  }
+};
+
 // @desc    Subscribe and Issue Coupon
 // @route   POST /api/coupons/subscribe
 exports.subscribeUser = async (req, res) => {
   try {
     const { email } = req.body;
+    const clientIp = getClientIp(req);
 
     if (!email) {
       return res.status(400).json({ message: 'Email field is strictly required.' });
     }
 
-    // Check if the user is already on the list
-    const existingSubscriber = await Subscriber.findOne({ email });
+    // Check if the user is already on the list by email OR IP address
+    const existingSubscriber = await Subscriber.findOne({
+      $or: [{ email }, { ipAddress: clientIp }]
+    });
+
     if (existingSubscriber) {
-      return res.status(400).json({ message: 'This email is already registered.' });
+      return res.status(400).json({ message: 'This email or device is already subscribed.' });
     }
 
-    // 1. Save new subscriber
-    const newSubscriber = new Subscriber({ email });
+    // 1. Save new subscriber with IP address
+    const newSubscriber = new Subscriber({ email, ipAddress: clientIp });
     await newSubscriber.save();
 
     // 2. Dynamically build a clean unique coupon code (e.g., HW15-X92B)
@@ -36,13 +67,12 @@ exports.subscribeUser = async (req, res) => {
     });
     await newCoupon.save();
 
-    // 4. FIX: Send the welcome email with the EXACT generated code passed directly
+    // 4. Send the welcome email
     try {
       await sendWelcomeEmail(email, uniqueCouponCode, discountAmount);
       console.log(`✉️ Welcome email dispatched to ${email} with code: ${uniqueCouponCode}`);
     } catch (emailError) {
       console.error('Email Delivery Engine Failed:', emailError);
-      // We don't crash the request if the email host is down; user is still saved.
     }
 
     return res.status(201).json({

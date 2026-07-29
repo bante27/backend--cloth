@@ -1,6 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { subscribeUser, verifyCoupon } = require('../controllers/couponController');
+const { 
+  subscribeUser, 
+  verifyCoupon, 
+  checkSubscriptionStatus 
+} = require('../controllers/couponController');
+
+// 📊 Endpoint: GET /api/coupons/status
+// Purpose: Checks if the current IP address is already subscribed
+router.get('/status', checkSubscriptionStatus);
 
 // 🎟️ Endpoint: POST /api/coupons/subscribe
 // Purpose: Handles newsletter subscription, generates the discount coupon, and triggers the welcome email.
