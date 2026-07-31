@@ -11,8 +11,8 @@ const BACKEND_URL = process.env.NODE_ENV === 'production'
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    // ✅ Dynamically selected URL for Local vs Render
-    callbackURL: `${BACKEND_URL}/api/users/auth/google/callback`
+    // ✅ Use environment variable if provided, otherwise dynamic URL
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || `${BACKEND_URL}/api/users/auth/google/callback`
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
