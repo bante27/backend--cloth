@@ -1,6 +1,4 @@
 const rateLimit = require('express-rate-limit');
-
-// General API Limiter (100 requests / 15 mins)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -11,8 +9,6 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-// Strict Limiter for Auth & Sensitive Operations (10 requests / 15 mins)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
