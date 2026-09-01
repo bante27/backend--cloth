@@ -3,15 +3,27 @@ const router = express.Router();
 const multer = require('multer');
 const { storage } = require('../config/cloudinary');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { 
-  createProduct, 
-  getProducts, 
-  getProductById, 
-  updateProduct, 
-  deleteProduct, 
+const validate = require('../middleware/validationMiddleware');
+const {
+  getProductsSchema,
+  getProductByIdSchema,
+  createProductSchema,
+  updateProductSchema,
+  deleteProductSchema,
+  createProductReviewSchema,
+  getNewArrivalsSchema,
+  getLowestCostProductsSchema
+} = require('../validation/productValidation');
+
+const {
+  createProduct,
+  getProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
   createProductReview,
-  getNewArrivals,       // Imported ✅
-  getLowestCostProducts // Imported ✅
+  getNewArrivals,
+  getLowestCostProducts
 } = require('../controllers/productController');
 
 const upload = multer({ storage });
@@ -19,40 +31,17 @@ const upload = multer({ storage });
 // ==========================================
 // 🔓 Public Routes
 // ==========================================
-
-// @desc    Get all products with filtering
-router.get('/', getProducts);
-
-// @desc    Get new arrival products (Placed ABOVE /:id) ✅
-router.get('/new-arrivals', getNewArrivals);
-
-// @desc    Get products sorted by lowest price (Placed ABOVE /:id) ✅
-router.get('/lowest-cost', getLowestCostProducts);
-
-// @desc    Get a single product by ID (Dynamic route stays below static paths)
-router.get('/:id', getProductById);
-
+router.get('/', validate(getProductsSchema), getProducts);
+router.get('/new-arrivals', validate(getNewArrivalsSchema), getNewArrivals);
+router.get('/lowest-cost', validate(getLowestCostProductsSchema), getLowestCostProducts);
+router.get('/:id', validate(getProductByIdSchema), getProductById);
 
 // ==========================================
 // 🔒 Protected / Admin Routes
 // ==========================================
-
-/**
- * Note: We use upload.any() because our controller expects dynamic field names
- * like variantImages[0][imageFront], variantImages[1][imageBack], etc.
- * upload.fields() cannot handle these indexed names dynamically.
- */
-
-// @desc    Create a new product (Admin Only)
-router.post('/', protect, adminOnly, upload.any(), createProduct);
-
-// @desc    Update an existing product (Admin Only)
-router.put('/:id', protect, adminOnly, upload.any(), updateProduct);
-
-// @desc    Delete a product (Admin Only)
-router.delete('/:id', protect, adminOnly, deleteProduct);
-
-// @desc    Add a product review (Logged-in Users)
-router.post('/:id/reviews', protect, createProductReview);
+router.post('/', protect, adminOnly, upload.any(), validate(createProductSchema), createProduct);
+router.put('/:id', protect, adminOnly, upload.any(), validate(updateProductSchema), updateProduct);
+router.delete('/:id', protect, adminOnly, validate(deleteProductSchema), deleteProduct);
+router.post('/:id/reviews', protect, validate(createProductReviewSchema), createProductReview);
 
 module.exports = router;
